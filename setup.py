@@ -51,32 +51,31 @@ Authorize Sauce is released under the `MIT License`_.
 
 from setuptools import setup
 
-
 setup(
-    name='AuthorizeSauce',
-    version='0.2.1',
-    author='Jeff Schenck',
-    author_email='jmschenck@gmail.com',
-    url='http://authorize-sauce.readthedocs.org/',
-    download_url='https://github.com/jeffschenck/authorizesauce',
-    description='An awesome-sauce Python library for accessing the Authorize.net API. Sweet!',
+    name="AuthorizeSauce",
+    version="0.2.1",
+    author="Jeff Schenck",
+    author_email="jmschenck@gmail.com",
+    url="http://authorize-sauce.readthedocs.org/",
+    download_url="https://github.com/jeffschenck/authorizesauce",
+    description="An awesome-sauce Python library for accessing the Authorize.net API. Sweet!",
     long_description=__doc__,
-    license='MIT',
+    license="MIT",
     install_requires=[
         'suds-jurko>=0.6',
     ],
     packages=[
-        'authorize',
-        'authorize.apis',
+        "authorize",
+        "authorize.apis",
     ],
     classifiers=[
-        'Development Status :: 4 - Beta',
-        'Environment :: Console',
-        'Environment :: Web Environment',
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 2',
-        'License :: OSI Approved :: MIT License',
-        'Topic :: Office/Business :: Financial',
-        'Topic :: Internet :: WWW/HTTP',
+        "Development Status :: 4 - Beta",
+        "Environment :: Console",
+        "Environment :: Web Environment",
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 2",
+        "License :: OSI Approved :: MIT License",
+        "Topic :: Office/Business :: Financial",
+        "Topic :: Internet :: WWW/HTTP",
     ],
 )

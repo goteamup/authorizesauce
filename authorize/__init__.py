@@ -38,5 +38,9 @@ test
 
 from authorize.client import AuthorizeClient
 from authorize.data import Address, CreditCard
-from authorize.exceptions import AuthorizeConnectionError, AuthorizeError, \
-    AuthorizeInvalidError, AuthorizeResponseError
+from authorize.exceptions import (
+    AuthorizeConnectionError,
+    AuthorizeError,
+    AuthorizeInvalidError,
+    AuthorizeResponseError,
+)
