@@ -1,7 +1,7 @@
 from datetime import date
 
 import mock
-from unittest2 import TestCase
+from unittest import TestCase
 
 from authorize import Address, AuthorizeClient, CreditCard
 from authorize.client import (

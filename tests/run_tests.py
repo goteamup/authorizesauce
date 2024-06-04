@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
-from unittest2 import TestLoader, TextTestRunner
+from unittest import TestLoader, TextTestRunner
 
 
 if __name__ == "__main__":

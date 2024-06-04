@@ -62,7 +62,9 @@ setup(
     long_description=__doc__,
     license="MIT",
     install_requires=[
-        'suds-jurko>=0.6',
+        "suds-community==1.1.2",
+        "requests",
+        "urllib3"
     ],
     packages=[
         "authorize",

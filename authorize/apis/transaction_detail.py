@@ -1,11 +1,10 @@
 from decimal import Decimal
-import urllib
+from urllib.parse import urlencode
 
 from suds import WebFault
 from suds.client import Client
 
 from authorize.exceptions import AuthorizeConnectionError, AuthorizeResponseError
-
 
 PROD_URL = "https://api.authorize.net/soap/v1/Service.asmx?WSDL"
 TEST_URL = "https://apitest.authorize.net/soap/v1/Service.asmx?WSDL"
@@ -16,7 +15,7 @@ class TransactionDetailAPI(object):
         self.url = TEST_URL if debug else PROD_URL
         self.login_id = login_id
         self.transaction_key = transaction_key
-        self.transaction_options = urllib.urlencode(
+        self.transaction_options = urlencode(
             {
                 "x_version": "3.1",
                 "x_test_request": "Y" if test else "F",

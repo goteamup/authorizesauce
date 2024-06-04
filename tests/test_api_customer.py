@@ -2,7 +2,7 @@ from datetime import date
 
 import mock
 from suds import WebFault
-from unittest2 import TestCase
+from unittest import TestCase
 
 from authorize.apis.customer import CustomerAPI, PROD_URL, TEST_URL
 from authorize.data import Address, CreditCard
@@ -15,7 +15,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-OPTIONS = "x_delim_data=TRUE&x_version=3.1&x_delim_char=%3B&x_test_request=F"
+OPTIONS = "x_version=3.1&x_test_request=F&x_delim_data=TRUE&x_delim_char=%3B"
 RESPONSE = (
     "1;1;1;This transaction has been approved.;IKRAGJ;Y;2171062816;;;20.00;CC"
     ";auth_only;;Jeffrey;Schenck;;45 Rose Ave;Venice;CA;90291;USA;;;;;;;;;;;;"

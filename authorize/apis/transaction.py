@@ -1,9 +1,8 @@
 from decimal import Decimal
-import urllib
+
 import requests
 
-from authorize.exceptions import AuthorizeConnectionError, AuthorizeResponseError
-
+from authorize.exceptions import AuthorizeResponseError
 
 PROD_URL = "https://secure.authorize.net/gateway/transact.dll"
 TEST_URL = "https://test.authorize.net/gateway/transact.dll"
@@ -72,9 +71,7 @@ class TransactionAPI(object):
                     "x_country": address.country,
                 }
             )
-        for key, value in params.items():
-            if value is None:
-                del params[key]
+        params = {k: v for k, v in params.items() if v is not None}
         return params
 
     def auth(self, amount, credit_card, address=None):

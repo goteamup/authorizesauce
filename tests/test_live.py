@@ -6,7 +6,7 @@ from datetime import date, timedelta
 import os
 import random
 
-from unittest2 import skipUnless, TestCase
+from unittest import skipUnless, TestCase
 
 from authorize import Address, AuthorizeClient, CreditCard
 from authorize.exceptions import AuthorizeResponseError
