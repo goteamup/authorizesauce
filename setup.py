@@ -54,15 +54,14 @@ from setuptools import setup
 setup(
     name="AuthorizeSauce",
     version="0.2.1",
-    author="Jeff Schenck",
-    author_email="jmschenck@gmail.com",
+    author="TeamUp",
     url="http://authorize-sauce.readthedocs.org/",
-    download_url="https://github.com/jeffschenck/authorizesauce",
+    download_url="https://github.com/goteamup/authorizesauce",
     description="An awesome-sauce Python library for accessing the Authorize.net API. Sweet!",
     long_description=__doc__,
     license="MIT",
     install_requires=[
-        "suds-community==1.1.2",
+        "suds==1.1.2",
         "requests",
         "urllib3"
     ],

@@ -17,11 +17,12 @@ Authorize.net_.
 
 """
 
+from uuid import uuid4
+
 from authorize.apis.customer import CustomerAPI
 from authorize.apis.recurring import RecurringAPI
 from authorize.apis.transaction import TransactionAPI
 from authorize.apis.transaction_detail import TransactionDetailAPI
-from uuid import uuid4
 
 
 class AuthorizeClient(object):

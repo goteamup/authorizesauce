@@ -1,10 +1,10 @@
 from datetime import date
+from unittest import TestCase
 
 import mock
 from suds import WebFault
-from unittest import TestCase
 
-from authorize.apis.customer import CustomerAPI, PROD_URL, TEST_URL
+from authorize.apis.customer import PROD_URL, TEST_URL, CustomerAPI
 from authorize.data import Address, CreditCard
 from authorize.exceptions import AuthorizeConnectionError, AuthorizeResponseError
 
@@ -86,7 +86,7 @@ class CustomerAPITests(TestCase):
         self.Client.reset_mock()
         api = CustomerAPI("123", "456")
         self.assertEqual(self.Client.call_args, None)
-        client_ = api.client
+        api.client
         self.assertEqual(self.Client.call_args[0][0], TEST_URL)
         client_auth = api.client_auth
         self.assertEqual(client_auth.name, "123")
