@@ -1,3 +1,5 @@
+name: Ruff
+
 on:
   # Trigger during pull requests and merge to master.
   pull_request:
