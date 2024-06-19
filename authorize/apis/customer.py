@@ -1,4 +1,3 @@
-import urllib
 from decimal import Decimal
 from urllib.parse import urlencode
 
@@ -46,7 +45,7 @@ class CustomerAPI(object):
         method = getattr(self.client.service, service)
         try:
             response = method(self.client_auth, *args)
-        except WebFault as e:
+        except WebFault:
             raise AuthorizeConnectionError("Error contacting SOAP API.")
         if response.resultCode != "Ok":
             error = response.messages[0][0]

@@ -1,3 +1,5 @@
+# ruff: noqa
+
 """
 Authorize.net payment gateway interface.
 

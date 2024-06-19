@@ -1,10 +1,10 @@
 from datetime import date, timedelta
+from unittest import TestCase
 
 import mock
 from suds import WebFault
-from unittest import TestCase
 
-from authorize.apis.recurring import PROD_URL, RecurringAPI, TEST_URL
+from authorize.apis.recurring import PROD_URL, TEST_URL, RecurringAPI
 from authorize.data import CreditCard
 from authorize.exceptions import (
     AuthorizeConnectionError,
@@ -69,7 +69,7 @@ class RecurringAPITests(TestCase):
         self.Client.reset_mock()
         api = RecurringAPI("123", "456")
         self.assertEqual(self.Client.call_args, None)
-        client_ = api.client
+        api.client
         self.assertEqual(self.Client.call_args[0][0], TEST_URL)
         client_auth = api.client_auth
         self.assertEqual(client_auth.name, "123")

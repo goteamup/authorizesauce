@@ -1,6 +1,13 @@
 name: Python package
 
-on: [push]
+on:
+  # Trigger during pull requests and merge to master.
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
 
 jobs:
   build:
