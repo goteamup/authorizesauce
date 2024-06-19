@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import requests
 
-from authorize.exceptions import AuthorizeResponseError
+from authorize.exceptions import AuthorizeConnectionError, AuthorizeResponseError
 
 PROD_URL = "https://secure.authorize.net/gateway/transact.dll"
 TEST_URL = "https://test.authorize.net/gateway/transact.dll"
@@ -17,9 +17,14 @@ RESPONSE_FIELDS = {
     11: "transaction_type",
     38: "cvv_response",
 }
+REQUEST_TIMEOUT = 30
 
 
 def parse_response(response):
+    if isinstance(response, bytes):
+        response = response.decode("utf-8")
+    elif not isinstance(response, str):
+        raise ValueError("Response must be a string or bytes, not %r" % type(response))
     response = response.split(";")
     fields = {}
     for index, name in RESPONSE_FIELDS.items():
@@ -40,7 +45,16 @@ class TransactionAPI(object):
         }
 
     def _make_call(self, params):
-        response = requests.post(self.url, data=params)
+        try:
+            response = requests.post(self.url, data=params, timeout=REQUEST_TIMEOUT)
+        except requests.RequestException as e:
+            raise AuthorizeConnectionError() from e
+        if response.status_code != 200:
+            ex = Exception(
+                "Received HTTP status code %d when calling %s"
+                % (response.status_code, self.url)
+            )
+            raise AuthorizeResponseError() from ex
         fields = parse_response(response.content)
         if fields["response_code"] != "1":
             e = AuthorizeResponseError(

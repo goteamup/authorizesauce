@@ -1,7 +1,6 @@
 from datetime import date
-
-import mock
-from unittest import TestCase
+from unittest import TestCase, mock
+from unittest.mock import call
 
 from authorize import Address, AuthorizeClient, CreditCard
 from authorize.client import (
@@ -10,7 +9,6 @@ from authorize.client import (
     AuthorizeSavedCard,
     AuthorizeTransaction,
 )
-
 
 TRANSACTION_RESULT = {
     "cvv_response": "P",
@@ -25,14 +23,24 @@ TRANSACTION_RESULT = {
 }
 
 
+# pylint: disable=protected-access
+# pylint: disable=missing-docstring
 class ClientTests(TestCase):
     def setUp(self):
         self.transaction_api_patcher = mock.patch("authorize.client.TransactionAPI")
         self.transaction_api = self.transaction_api_patcher.start()
+
         self.customer_api_patcher = mock.patch("authorize.client.CustomerAPI")
         self.customer_api = self.customer_api_patcher.start()
+
         self.recurring_api_patcher = mock.patch("authorize.client.RecurringAPI")
         self.recurring_api = self.recurring_api_patcher.start()
+
+        self.transaction_detail_api_patcher = mock.patch(
+            "authorize.client.TransactionDetailAPI"
+        )
+        self.transaction_detail_api = self.transaction_detail_api_patcher.start()
+
         self.client = AuthorizeClient("123", "456")
         self.year = date.today().year + 10
         self.credit_card = CreditCard(
@@ -44,15 +52,17 @@ class ClientTests(TestCase):
         self.transaction_api_patcher.stop()
         self.customer_api_patcher.stop()
         self.recurring_api_patcher.stop()
+        self.transaction_detail_api_patcher.stop()
 
     def test_basic_authorize_client(self):
         self.transaction_api.reset_mock()
         self.customer_api.reset_mock()
         self.recurring_api.reset_mock()
+        self.transaction_detail_api.reset_mock()
         self.assertEqual(self.transaction_api.call_args, None)
         self.assertEqual(self.customer_api.call_args, None)
         self.assertEqual(self.recurring_api.call_args, None)
-        client = AuthorizeClient("123", "456", False, False)
+        AuthorizeClient("123", "456", False, False)
         self.assertEqual(
             self.transaction_api.call_args, (("123", "456", False, False), {})
         )
@@ -90,7 +100,9 @@ class ClientTests(TestCase):
         card = AuthorizeCreditCard(self.client, self.credit_card)
         result = card.auth(10)
         self.assertEqual(
-            self.client._transaction.auth.call_args, ((10, self.credit_card, None), {})
+            # pylint: disable=maybe-no-member
+            self.client._transaction.auth.call_args,
+            ((10, self.credit_card, None), {}),  # pylint: disable=maybe-no-member
         )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
@@ -101,7 +113,7 @@ class ClientTests(TestCase):
         card = AuthorizeCreditCard(self.client, self.credit_card)
         result = card.capture(10)
         self.assertEqual(
-            self.client._transaction.capture.call_args,
+            self.client._transaction.capture.call_args,  # pylint: disable=maybe-no-member
             ((10, self.credit_card, None), {}),
         )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
@@ -113,14 +125,23 @@ class ClientTests(TestCase):
         card = AuthorizeCreditCard(self.client, self.credit_card)
         result = card.save()
         self.assertEqual(
+            # pylint: disable=maybe-no-member
             self.client._customer.create_saved_payment.call_args,
             ((self.credit_card,), {"address": None}),
         )
         self.assertTrue(
-            isinstance(self.client._customer.create_saved_profile.call_args[0][0], str)
+            isinstance(
+                # pylint: disable=maybe-no-member
+                self.client._customer.create_saved_profile.call_args[0][0],
+                str,
+            )
         )
         self.assertTrue(
-            isinstance(self.client._customer.create_saved_profile.call_args[0][1], list)
+            isinstance(
+                # pylint: disable=maybe-no-member
+                self.client._customer.create_saved_profile.call_args[0][1],
+                list,
+            )
         )
         self.assertTrue(isinstance(result, AuthorizeSavedCard))
         self.assertEqual(result.uid, "1|2")
@@ -131,6 +152,7 @@ class ClientTests(TestCase):
         today = date.today()
         result = card.recurring(10, today, months=1)
         self.assertEqual(
+            # pylint: disable=maybe-no-member
             self.client._recurring.create_subscription.call_args,
             (
                 (self.credit_card, 10, today),
@@ -157,7 +179,9 @@ class ClientTests(TestCase):
         # Test without amount
         result = transaction.settle()
         self.assertEqual(
-            self.client._transaction.settle.call_args, (("123",), {"amount": None})
+            # pylint: disable=maybe-no-member
+            self.client._transaction.settle.call_args,
+            (("123",), {"amount": None}),
         )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
@@ -165,7 +189,9 @@ class ClientTests(TestCase):
         # Test with amount
         result = transaction.settle(10)
         self.assertEqual(
-            self.client._transaction.settle.call_args, (("123",), {"amount": 10})
+            # pylint: disable=maybe-no-member
+            self.client._transaction.settle.call_args,
+            (("123",), {"amount": 10}),
         )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
@@ -175,10 +201,12 @@ class ClientTests(TestCase):
         transaction = AuthorizeTransaction(self.client, "123")
 
         # Test with amount
-        result = transaction.credit("1111", 10)
+        result = transaction.credit("1111", 10, 120)
         self.assertEqual(
-            self.client._transaction.credit.call_args, (("1111", "123", 10), {})
-        )
+            self.client._transaction.credit.call_args,  # pylint: disable=maybe-no-member
+            call("1111", "123", 10, duplicate_window=120),
+            {},
+        )  # noqa
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
 
@@ -186,7 +214,11 @@ class ClientTests(TestCase):
         self.client._transaction.void.return_value = TRANSACTION_RESULT
         transaction = AuthorizeTransaction(self.client, "123")
         result = transaction.void()
-        self.assertEqual(self.client._transaction.void.call_args, (("123",), {}))
+        self.assertEqual(
+            # pylint: disable=maybe-no-member
+            self.client._transaction.void.call_args,
+            (("123",), {}),
+        )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
 
@@ -198,7 +230,11 @@ class ClientTests(TestCase):
         self.client._customer.auth.return_value = TRANSACTION_RESULT
         saved = AuthorizeSavedCard(self.client, "1|2")
         result = saved.auth(10)
-        self.assertEqual(self.client._customer.auth.call_args, (("1", "2", 10), {}))
+        self.assertEqual(
+            # pylint: disable=maybe-no-member
+            self.client._customer.auth.call_args,
+            (("1", "2", 10), {}),
+        )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
 
@@ -206,15 +242,21 @@ class ClientTests(TestCase):
         self.client._customer.capture.return_value = TRANSACTION_RESULT
         saved = AuthorizeSavedCard(self.client, "1|2")
         result = saved.capture(10)
-        self.assertEqual(self.client._customer.capture.call_args, (("1", "2", 10), {}))
+        self.assertEqual(
+            # pylint: disable=maybe-no-member
+            self.client._customer.capture.call_args,
+            (("1", "2", 10), {}),
+        )
         self.assertTrue(isinstance(result, AuthorizeTransaction))
         self.assertEqual(result.uid, "2171062816")
 
     def test_authorize_saved_card_delete(self):
         saved = AuthorizeSavedCard(self.client, "1|2")
-        result = saved.delete()
+        saved.delete()
         self.assertEqual(
-            self.client._customer.delete_saved_payment.call_args, (("1", "2"), {})
+            # pylint: disable=maybe-no-member
+            self.client._customer.delete_saved_payment.call_args,
+            (("1", "2"), {}),
         )
 
     def test_authorize_recurring_basic(self):
@@ -225,6 +267,7 @@ class ClientTests(TestCase):
         recurring = AuthorizeRecurring(self.client, "123")
         recurring.update(occurrences=20)
         self.assertEqual(
+            # pylint: disable=maybe-no-member
             self.client._recurring.update_subscription.call_args,
             (
                 ("123",),
@@ -242,5 +285,7 @@ class ClientTests(TestCase):
         recurring = AuthorizeRecurring(self.client, "123")
         recurring.delete()
         self.assertEqual(
-            self.client._recurring.delete_subscription.call_args, (("123",), {})
+            # pylint: disable=maybe-no-member
+            self.client._recurring.delete_subscription.call_args,
+            (("123",), {}),
         )

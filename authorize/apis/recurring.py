@@ -10,7 +10,6 @@ from authorize.exceptions import (
     AuthorizeResponseError,
 )
 
-
 PROD_URL = "https://api.authorize.net/soap/v1/Service.asmx?WSDL"
 TEST_URL = "https://apitest.authorize.net/soap/v1/Service.asmx?WSDL"
 
@@ -116,6 +115,8 @@ class RecurringAPI(object):
                 "Subscriptions require first name "
                 "and last name to be provided with the credit card."
             )
+        if subscription.billTo is None:
+            subscription.billTo = self.client.factory.create("NameAndAddressType")
         subscription.billTo.firstName = credit_card.first_name
         subscription.billTo.lastName = credit_card.last_name
 
@@ -145,13 +146,21 @@ class RecurringAPI(object):
                 raise AuthorizeInvalidError(
                     "The interval months must be an " "integer value between 1 and 12."
                 )
+            if subscription.paymentSchedule is None:
+                subscription.paymentSchedule = self.client.factory.create(
+                    "PaymentScheduleType"
+                )
+            if subscription.paymentSchedule.interval is None:
+                subscription.paymentSchedule.interval = self.client.factory.create(
+                    "PaymentScheduleTypeInterval"
+                )
             subscription.paymentSchedule.interval.unit = self.client.factory.create(
                 "ARBSubscriptionUnitEnum"
             ).months
             subscription.paymentSchedule.interval.length = months
         if start < date.today():
             raise AuthorizeInvalidError(
-                "The start date for the subscription " "may not be in the past."
+                f"The start date {start} for the subscription may not be in the past."
             )
         subscription.paymentSchedule.startDate = start.strftime("%Y-%m-%d")
         if occurrences is None:
@@ -215,6 +224,8 @@ class RecurringAPI(object):
             price.
         """
         subscription = self.client.factory.create("ARBSubscriptionType")
+        if subscription.paymentSchedule is None:
+            subscription.paymentSchedule = self.client.factory.create("PaymentScheduleType")
 
         # Add the basic subscription updates
         if amount:
@@ -235,7 +246,7 @@ class RecurringAPI(object):
         if trial_occurrences:
             subscription.paymentSchedule.trialOccurrences = trial_occurrences
 
-        # Make the API call to update the subscription
+        # Make the API call to update the subscription.
         self._make_call("ARBUpdateSubscription", subscription_id, subscription)
 
     def delete_subscription(self, subscription_id):

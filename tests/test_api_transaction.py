@@ -1,7 +1,8 @@
 from datetime import date
 from unittest import TestCase
 
-import mock
+import requests
+import responses
 
 from authorize.apis.transaction import PROD_URL, TEST_URL, TransactionAPI
 from authorize.data import Address, CreditCard
@@ -46,8 +47,6 @@ PARSED_ERROR = {
 class TransactionAPITests(TestCase):
     def setUp(self):
         self.api = TransactionAPI("123", "456")
-        self.success = lambda *args, **kwargs: SUCCESS
-        self.error = lambda *args, **kwargs: ERROR
         self.year = date.today().year + 10
         self.credit_card = CreditCard("4111111111111111", self.year, 1, "911")
         self.address = Address("45 Rose Ave", "Venice", "CA", "90291")
@@ -58,23 +57,31 @@ class TransactionAPITests(TestCase):
         api = TransactionAPI("123", "456", debug=False)
         self.assertEqual(api.url, PROD_URL)
 
-    @mock.patch("authorize.apis.transaction.requests.urlopen")
-    def test_make_call(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_make_call(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
         result = self.api._make_call({"a": "1", "b": "2"})
-        self.assertEqual(urlopen.call_args[0][0], "{0}?a=1&b=2".format(TEST_URL))
+        self.assertEqual(response.calls[0].request.body, "a=1&b=2")
         self.assertEqual(result, PARSED_SUCCESS)
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_make_call_connection_error(self, urlopen):
-        urlopen.side_effect = IOError("Borked")
-        self.assertRaises(
-            AuthorizeConnectionError, self.api._make_call, {"a": "1", "b": "2"}
-        )
+    @responses.activate
+    def test_make_call_connection_error(self):
+        # Mock the response to produce an IOError.
+        responses.add(responses.POST, TEST_URL, body=requests.Timeout())
+        with self.assertRaises(AuthorizeConnectionError):
+            self.api._make_call({"a": "1", "b": "2"})
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_make_call_response_error(self, urlopen):
-        urlopen.side_effect = self.error
+    @responses.activate
+    def test_make_call_http_error(self):
+        # Mock the response to produce an IOError.
+        responses.post(TEST_URL, status=500, body="Internal Server Error")
+        with self.assertRaises(AuthorizeResponseError) as e:
+            self.api._make_call({"a": "1", "b": "2"})
+            self.assertEqual(e.msg, f"Received HTTP status code 500 when calling {TEST_URL}")
+
+    @responses.activate
+    def test_make_call_response_error(self):
+        responses.add(responses.POST, TEST_URL, body=ERROR)
         try:
             self.api._make_call({"a": "1", "b": "2"})
         except AuthorizeResponseError as e:
@@ -110,7 +117,7 @@ class TransactionAPITests(TestCase):
             params,
             {
                 "x_card_num": "4111111111111111",
-                "x_exp_date": "01-{0}".format(self.year),
+                "x_exp_date": f"01-{self.year}",
                 "x_card_code": "911",
                 "x_address": "45 Rose Ave",
                 "x_city": "Venice",
@@ -120,85 +127,86 @@ class TransactionAPITests(TestCase):
             },
         )
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_auth(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_auth(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
         result = self.api.auth(20, self.credit_card, self.address)
         self.assertEqual(
-            urlopen.call_args[0][0],
+            response.calls[0].request.body.split("&").sort(),
             "https://test.authorize.net/gateway/transact.dll?x_login=123"
             "&x_zip=90291&x_card_num=4111111111111111&x_amount=20.00"
             "&x_tran_key=456&x_city=Venice&x_country=US&x_version=3.1"
             "&x_state=CA&x_delim_char=%3B&x_address=45+Rose+Ave"
-            "&x_exp_date=01-{0}&x_test_request=FALSE&x_card_code=911"
-            "&x_type=AUTH_ONLY&x_delim_data=TRUE".format(str(self.year)),
+            f"&x_exp_date=01-{self.year}&x_test_request=FALSE&x_card_code=911"
+            "&x_type=AUTH_ONLY&x_delim_data=TRUE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_capture(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_capture(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
         result = self.api.capture(20, self.credit_card, self.address)
         self.assertEqual(
-            urlopen.call_args[0][0],
+            response.calls[-1].request.body.split("&").sort(),
             "https://test.authorize.net/gateway/transact.dll?x_login=123"
             "&x_zip=90291&x_card_num=4111111111111111&x_amount=20.00"
             "&x_tran_key=456&x_city=Venice&x_country=US&x_version=3.1"
             "&x_state=CA&x_delim_char=%3B&x_address=45+Rose+Ave"
-            "&x_exp_date=01-{0}&x_test_request=FALSE&x_card_code=911"
-            "&x_type=AUTH_CAPTURE&x_delim_data=TRUE".format(str(self.year)),
+            f"&x_exp_date=01-{self.year}&x_test_request=FALSE&x_card_code=911"
+            "&x_type=AUTH_CAPTURE&x_delim_data=TRUE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_settle(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_settle(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
 
         # Test without specified amount
         result = self.api.settle("123456")
         self.assertEqual(
-            urlopen.call_args[0][0],
-            "https://test.authorize.net/gateway/transact.dll?x_login=123"
+            response.calls[-1].request.body.split("&").sort(),
+            f"{TEST_URL}?x_login=123"
             "&x_trans_id=123456&x_version=3.1&x_delim_char=%3B"
             "&x_type=PRIOR_AUTH_CAPTURE&x_delim_data=TRUE&x_tran_key=456"
-            "&x_test_request=FALSE",
+            "&x_test_request=FALSE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)
 
         # Test with specified amount
         result = self.api.settle("123456", amount=10)
         self.assertEqual(
-            urlopen.call_args[0][0],
-            "https://test.authorize.net/gateway/transact.dll?x_login=123"
+            response.calls[-1].request.body.split("&").sort(),
+            f"{TEST_URL}?x_login=123"
             "&x_trans_id=123456&x_version=3.1&x_delim_char=%3B"
             "&x_type=PRIOR_AUTH_CAPTURE&x_amount=10.00&x_delim_data=TRUE"
-            "&x_tran_key=456&x_test_request=FALSE",
+            "&x_tran_key=456&x_test_request=FALSE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_credit(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_credit(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
 
         # Test with transaction_id, amount
         result = self.api.credit("1111", "123456", 10)
         self.assertEqual(
-            urlopen.call_args[0][0],
-            "https://test.authorize.net/gateway/transact.dll?x_login=123"
+            response.calls[-1].request.body.split("&").sort(),
+            f"{TEST_URL}?x_login=123"
             "&x_trans_id=123456&x_version=3.1&x_amount=10.00&x_delim_char=%3B"
             "&x_type=CREDIT&x_card_num=1111&x_delim_data=TRUE&x_tran_key=456"
-            "&x_test_request=FALSE",
+            "&x_test_request=FALSE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)
 
-    @mock.patch("authorize.apis.transaction.urllib.request.urlopen")
-    def test_void(self, urlopen):
-        urlopen.side_effect = self.success
+    @responses.activate
+    def test_void(self):
+        response = responses.post(TEST_URL, body=SUCCESS)
         result = self.api.void("123456")
+        print(response.calls[-1].request.body)
         self.assertEqual(
-            urlopen.call_args[0][0],
-            "https://test.authorize.net/gateway/transact.dll?x_login=123"
+            response.calls[-1].request.body.split("&").sort(),
+            "x_login=123"
             "&x_trans_id=123456&x_version=3.1&x_delim_char=%3B&x_type=VOID"
-            "&x_delim_data=TRUE&x_tran_key=456&x_test_request=FALSE",
+            "&x_delim_data=TRUE&x_tran_key=456&x_test_request=FALSE".split("&").sort(),
         )
         self.assertEqual(result, PARSED_SUCCESS)

@@ -1,5 +1,5 @@
-from decimal import Decimal
 import urllib
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from suds import WebFault
@@ -7,7 +7,6 @@ from suds.client import Client
 
 from authorize.apis.transaction import parse_response
 from authorize.exceptions import AuthorizeConnectionError, AuthorizeResponseError
-
 
 PROD_URL = "https://api.authorize.net/soap/v1/Service.asmx?WSDL"
 TEST_URL = "https://apitest.authorize.net/soap/v1/Service.asmx?WSDL"
@@ -104,6 +103,8 @@ class CustomerAPI(object):
         payment_profile.payment = payment_type
 
         # Customer billing name and address are optional fields
+        if payment_profile.billTo is None:
+            payment_profile.billTo = self.client.factory.create("CustomerAddressType")
         if credit_card.first_name:
             payment_profile.billTo.firstName = credit_card.first_name
         if credit_card.last_name:

@@ -2,15 +2,13 @@
 Tests against the sandbox Authorize.net API. Slow, requires internet.
 """
 
-from datetime import date, timedelta
 import os
 import random
-
-from unittest import skipUnless, TestCase
+from datetime import date, timedelta
+from unittest import TestCase, skipUnless
 
 from authorize import Address, AuthorizeClient, CreditCard
 from authorize.exceptions import AuthorizeResponseError
-
 
 # Authorize.net developer login for test (https://test.authorize.net)
 # user: authorizepy0
@@ -18,11 +16,10 @@ from authorize.exceptions import AuthorizeResponseError
 # gateway id: 355553
 
 SKIP_MESSAGE = (
-    "Live tests only run if the AUTHORIZE_LIVE_TESTS " "environment variable is true."
+    "Live tests only run if the AUTHORIZE_LIVE_TESTS environment variable is true."
 )
 TEST_LOGIN_ID = "285tUPuS"
 TEST_TRANSACTION_KEY = "58JKJ4T95uee75wd"
-
 
 @skipUnless(os.environ.get("AUTHORIZE_LIVE_TESTS"), SKIP_MESSAGE)
 class AuthorizeLiveTests(TestCase):
