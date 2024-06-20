@@ -53,7 +53,7 @@ from setuptools import setup
 
 setup(
     name="AuthorizeSauce",
-    version="0.2.1",
+    version="0.2.2",
     author="TeamUp",
     url="http://authorize-sauce.readthedocs.org/",
     download_url="https://github.com/goteamup/authorizesauce",
